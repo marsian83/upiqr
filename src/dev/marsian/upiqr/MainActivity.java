@@ -49,7 +49,7 @@ public class MainActivity extends Activity {
     String caller;       // package that asked us to pay
 
     Ui.Palette p;
-    TextView statusText, hint;
+    TextView statusText, hint, paidButton;
     View statusDot;
     FrameLayout qrSlot;
     ObjectAnimator pulse;
@@ -218,7 +218,7 @@ public class MainActivity extends Activity {
         root.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
 
         if (fromIntent) {
-            TextView paid = primaryButton(this, p, "I've paid");
+            TextView paid = paidButton = primaryButton(this, p, "I've paid");
             paid.setOnClickListener(v -> finishWith(true));
             root.addView(paid, new LinearLayout.LayoutParams(-1, dp(this, 54)));
             hint = label(this, "Scan with any UPI app, then come back here", 12, 400, p.fg2);
@@ -329,6 +329,7 @@ public class MainActivity extends Activity {
         statusDot.setAlpha(1f);
         ((android.graphics.drawable.GradientDrawable) statusDot.getBackground()).setColor(p.success);
         statusText.setText("Payment received");
+        if (paidButton != null) paidButton.animate().alpha(0f).setDuration(200).withEndAction(() -> paidButton.setVisibility(View.INVISIBLE)).start();
         if (hint != null) hint.setText("Returning to " + (caller != null ? appName(caller) : "the merchant") + "…");
         Ui.CheckView check = new Ui.CheckView(this, p.success);
         check.setAlpha(0f);
