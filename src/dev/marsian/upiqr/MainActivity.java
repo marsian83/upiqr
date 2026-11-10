@@ -12,6 +12,8 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.InputType;
 import android.util.Log;
@@ -36,6 +38,10 @@ public class MainActivity extends Activity {
 
     String upi;          // the full upi:// URI we were handed
     boolean fromIntent;  // launched by a merchant app (vs. from the launcher)
+    long capturedAt;     // when the link arrived, for the elapsed/expiry clock
+    TextView clock;
+    final Handler ticker = new Handler(Looper.getMainLooper());
+    final Runnable tick = new Runnable() { public void run() { updateClock(); ticker.postDelayed(this, 1000); } };
 
     @Override
     protected void onCreate(Bundle b) {
@@ -49,13 +55,15 @@ public class MainActivity extends Activity {
             upi = data.toString();
             fromIntent = true;
             Log.i(TAG, "caller=" + getCallingPackage() + " uri=" + upi);
-            prefs.edit().putString("last", upi).putString("lastCaller", String.valueOf(getCallingPackage())).apply();
+            capturedAt = System.currentTimeMillis();
+            prefs.edit().putLong("lastAt", capturedAt).putString("last", upi).putString("lastCaller", String.valueOf(getCallingPackage())).apply();
             // full brightness so the other phone can scan it easily
             WindowManager.LayoutParams lp = getWindow().getAttributes();
             lp.screenBrightness = 1f;
             getWindow().setAttributes(lp);
         } else {
             upi = prefs.getString("last", null);
+            capturedAt = prefs.getLong("lastAt", 0);
         }
         render(prefs.getString("lastCaller", null));
     }
@@ -76,6 +84,8 @@ public class MainActivity extends Activity {
             col.addView(text(am != null ? "₹" + am : "(no amount)", 32, true));
             col.addView(text((pn != null ? pn : "") + "\n" + (pa != null ? pa : ""), 16, false));
             if (tn != null) col.addView(text(tn, 14, false));
+            clock = text("", 15, true);
+            col.addView(clock);
             if (!fromIntent && lastCaller != null) col.addView(text("(last captured, from " + lastCaller + ")", 12, false));
 
             ImageView iv = new ImageView(this);
@@ -116,6 +126,7 @@ public class MainActivity extends Activity {
             if (!s.toLowerCase().startsWith("upi:")) { toast("Not a upi: link"); return; }
             upi = s;
             fromIntent = false;
+            capturedAt = System.currentTimeMillis();
             render(null);
         }));
 
@@ -123,6 +134,50 @@ public class MainActivity extends Activity {
         sv.setBackgroundColor(Color.WHITE);
         sv.addView(col);
         setContentView(sv);
+    }
+
+    @Override protected void onResume() { super.onResume(); ticker.post(tick); }
+    @Override protected void onPause() { super.onPause(); ticker.removeCallbacks(tick); }
+
+    void updateClock() {
+        if (clock == null || upi == null || capturedAt == 0) return;
+        long now = System.currentTimeMillis();
+        String txt = "Captured " + mmss(now - capturedAt) + " ago";
+        long exp = expiry(Uri.parse(upi));
+        if (exp > 0) {
+            long left = exp - now;
+            txt += left > 0 ? "\nExpires in " + mmss(left) : "\nEXPIRED " + mmss(-left) + " ago";
+            clock.setTextColor(left > 60000 ? Color.rgb(0, 120, 0) : Color.RED);
+        } else {
+            txt += "\n(link has no expiry; merchant usually allows ~5-10 min)";
+            clock.setTextColor(now - capturedAt > 5 * 60000 ? Color.RED : Color.DKGRAY);
+        }
+        clock.setText(txt);
+    }
+
+    // Signed UPI 2.0 links may carry QRexpire (and QRts); formats vary, so try
+    // epoch seconds/millis and ISO-8601.
+    static long expiry(Uri u) {
+        for (String k : u.getQueryParameterNames()) {
+            String lk = k.toLowerCase();
+            if (!(lk.equals("qrexpire") || lk.equals("expiry") || lk.equals("expiretime") || lk.equals("validityend"))) continue;
+            String v = u.getQueryParameter(k);
+            if (v == null) continue;
+            v = v.trim();
+            try {
+                long n = Long.parseLong(v);
+                return n < 100000000000L ? n * 1000 : n;
+            } catch (NumberFormatException ignored) {}
+            for (String f : new String[]{"yyyy-MM-dd'T'HH:mm:ssXXX", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss"}) {
+                try { return new java.text.SimpleDateFormat(f, java.util.Locale.US).parse(v).getTime(); } catch (Exception ignored) {}
+            }
+        }
+        return 0;
+    }
+
+    static String mmss(long ms) {
+        long s = ms / 1000;
+        return (s / 60) + ":" + String.format(java.util.Locale.US, "%02d", s % 60);
     }
 
     // Merchant SDKs only trust their server-side status check; returning
