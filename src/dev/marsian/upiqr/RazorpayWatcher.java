@@ -1,7 +1,5 @@
 package dev.marsian.upiqr;
 
-import android.util.Log;
-
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -60,10 +58,10 @@ final class RazorpayWatcher {
                 String s = fetch();
                 if (s == null) {
                     // not a Razorpay id after all (404/401) — give up quietly
-                    if (!supported) { Log.i(MainActivity.TAG, "razorpay: not supported"); return; }
+                    if (!supported) { MainActivity.debug("razorpay: not supported"); return; }
                 } else {
                     if (!supported) { supported = true; listener.onSupported(); }
-                    if (!s.equals(last)) Log.i(MainActivity.TAG, "razorpay: " + s);
+                    if (!s.equals(last)) MainActivity.debug("razorpay: " + s);
                     last = s;
                     listener.onStatus(s);
                     if (isPaid(s) || "failed".equals(s)) return;

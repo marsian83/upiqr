@@ -13,8 +13,11 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -23,9 +26,10 @@ import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.window.OnBackInvokedDispatcher;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -67,9 +71,7 @@ public class MainActivity extends Activity {
         p = new Ui.Palette(dark);
         Window w = getWindow();
         w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        w.setStatusBarColor(p.bg);
-        w.setNavigationBarColor(p.bg);
-        if (!dark) w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        w.setBackgroundDrawable(new ColorDrawable(p.bg));
 
         SharedPreferences prefs = getSharedPreferences("p", MODE_PRIVATE);
         Uri data = getIntent().getData();
@@ -78,7 +80,7 @@ public class MainActivity extends Activity {
             fromIntent = true;
             caller = getCallingPackage();
             capturedAt = System.currentTimeMillis();
-            Log.i(TAG, "caller=" + caller + " uri=" + upi);
+            debug("caller=" + caller + " uri=" + upi);
             prefs.edit().putLong("lastAt", capturedAt).putString("last", upi).putString("lastCaller", caller).apply();
             // full brightness so the other phone can scan it easily
             WindowManager.LayoutParams lp = w.getAttributes();
@@ -91,6 +93,36 @@ public class MainActivity extends Activity {
         }
         render();
         startWatcher();
+        if (fromIntent && Build.VERSION.SDK_INT >= 33)
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, () -> finishWith(false));
+    }
+
+    // Edge-to-edge is enforced from targetSdk 35 on Android 15+; older
+    // releases still need the bar colours set explicitly.
+    @SuppressWarnings("deprecation")
+    void styleSystemBars() {
+        Window w = getWindow();
+        if (Build.VERSION.SDK_INT < 35) {
+            w.setStatusBarColor(p.bg);
+            w.setNavigationBarColor(p.bg);
+        }
+        if (Build.VERSION.SDK_INT >= 30) {
+            int light = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+            w.getInsetsController().setSystemBarsAppearance(p.dark ? 0 : light, light);
+        } else if (!p.dark) {
+            w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
+    }
+
+    // fitsSystemWindows on a wrapper keeps content clear of the bars while the
+    // background still runs underneath them.
+    void show(View content) {
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackgroundColor(p.bg);
+        frame.setFitsSystemWindows(true);
+        frame.addView(content, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(frame);
+        styleSystemBars();
     }
 
     // ---------------------------------------------------------------- layout
@@ -118,7 +150,7 @@ public class MainActivity extends Activity {
 
         if (upi == null) {
             renderEmpty(root);
-            setContentView(root);
+            show(root);
             return;
         }
 
@@ -179,7 +211,7 @@ public class MainActivity extends Activity {
         // QR card — always white for scanner contrast, in both themes
         qrSlot = new FrameLayout(this);
         qrSlot.setBackground(rounded(Color.WHITE, dp(this, 28)));
-        qrSlot.setElevation(dark() ? 0 : dp(this, 6));
+        qrSlot.setElevation(p.dark ? 0 : dp(this, 6));
         int pad = dp(this, 18);
         qrSlot.setPadding(pad, pad, pad, pad);
         Ui.QrView qr = new Ui.QrView(this, upi);
@@ -232,7 +264,7 @@ public class MainActivity extends Activity {
             hint.setPadding(0, dp(this, 10), 0, 0);
             root.addView(hint);
         }
-        setContentView(root);
+        show(root);
         updateStatus();
     }
 
@@ -320,14 +352,14 @@ public class MainActivity extends Activity {
             dot = age > 5 * 60000 ? p.warn : p.accent;
         }
         statusText.setText(txt);
-        ((android.graphics.drawable.GradientDrawable) statusDot.getBackground()).setColor(dot);
+        ((GradientDrawable) statusDot.getBackground()).setColor(dot);
     }
 
     void onPaid() {
         done = true;
         if (pulse != null) pulse.cancel();
         statusDot.setAlpha(1f);
-        ((android.graphics.drawable.GradientDrawable) statusDot.getBackground()).setColor(p.success);
+        ((GradientDrawable) statusDot.getBackground()).setColor(p.success);
         statusText.setText("Payment received");
         if (paidButton != null) paidButton.animate().alpha(0f).setDuration(200).withEndAction(() -> paidButton.setVisibility(View.INVISIBLE)).start();
         if (hint != null) hint.setText("Returning to " + (caller != null ? appName(caller) : "the merchant") + "…");
@@ -343,7 +375,7 @@ public class MainActivity extends Activity {
     void onFailed() {
         if (pulse != null) pulse.cancel();
         statusDot.setAlpha(1f);
-        ((android.graphics.drawable.GradientDrawable) statusDot.getBackground()).setColor(p.danger);
+        ((GradientDrawable) statusDot.getBackground()).setColor(p.danger);
         statusText.setText("Payment failed");
         done = true;
     }
@@ -368,7 +400,9 @@ public class MainActivity extends Activity {
         finish();
     }
 
+    // Pre-Android 13 back handling; 13+ uses the OnBackInvokedCallback above.
     @Override
+    @SuppressWarnings("deprecation")
     public void onBackPressed() {
         if (fromIntent) finishWith(false); else super.onBackPressed();
     }
@@ -387,7 +421,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         if (req != REQ_FORWARD) return;
-        Log.i(TAG, "forward result=" + res + " extras=" + (data != null && data.getExtras() != null ? data.getExtras().toString() : null));
+        debug("forward result=" + res + " extras=" + (data != null && data.getExtras() != null ? data.getExtras().toString() : null));
         if (fromIntent) {
             // pass the real UPI app's answer straight back to the merchant
             setResult(res, data);
@@ -429,7 +463,6 @@ public class MainActivity extends Activity {
 
     // ---------------------------------------------------------------- helpers
 
-    boolean dark() { return p.dark; }
 
     String appName(String pkg) {
         try {
@@ -483,6 +516,12 @@ public class MainActivity extends Activity {
     static String mmss(long ms) {
         long s = Math.max(0, ms) / 1000;
         return (s / 60) + ":" + String.format(Locale.US, "%02d", s % 60);
+    }
+
+    // Payment links are sensitive, so logging is opt-in:
+    //   adb shell setprop log.tag.UPIQR DEBUG
+    static void debug(String s) {
+        if (Log.isLoggable(TAG, Log.DEBUG)) Log.d(TAG, s);
     }
 
     void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }

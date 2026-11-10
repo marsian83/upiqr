@@ -2,9 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="dev.marsian.upiqr"
     android:versionCode="2"
-    android:versionName="2.0">
+    android:versionName="1.0">
 
-    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34" />
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35" />
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -16,7 +16,10 @@
         </intent>
     </queries>
 
-    <application android:label="UPI QR" android:allowBackup="false">
+    <application
+        android:label="UPI QR"
+        android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
