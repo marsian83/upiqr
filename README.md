@@ -59,10 +59,10 @@ Every Android app has a unique ID, called its package name, and these lists chec
 
 | App | Package name |
 |---|---|
+| <img src="https://img.shields.io/badge/BHIM-00796B?logo=&logoColor=white" alt="BHIM" /> | `in.org.npci.upiapp` |
 | <img src="https://img.shields.io/badge/Google_Pay-4285F4?logo=googlepay&logoColor=white" alt="Google Pay" /> | `com.google.android.apps.nbu.paisa.user` |
 | <img src="https://img.shields.io/badge/PhonePe-5F259F?logo=phonepe&logoColor=white" alt="PhonePe" /> | `com.phonepe.app` |
 | <img src="https://img.shields.io/badge/Paytm-00BAF2?logo=paytm&logoColor=white" alt="Paytm" /> | `net.one97.paytm` |
-| <img src="https://img.shields.io/badge/BHIM-00796B?logo=&logoColor=white" alt="BHIM" /> | `in.org.npci.upiapp` |
 
 You can find any app's package name at the end of its Play Store link, after `?id=`.
 
