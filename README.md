@@ -1,89 +1,119 @@
-# UPI QR
+<h1 align="center">UPI QR</h1>
 
-Some Indian apps (food delivery, ticketing, bill pay) only let you pay by
-handing off to a UPI app installed on the same phone. They never show a QR
-code. That's a problem if the account you want to pay from is on another
-phone, or if you pay through something that only scans QR codes.
+<p align="center"><strong>Pay a "UPI app only" checkout by scanning a QR code.</strong></p>
 
-UPI QR registers itself as a UPI app on Android. When a merchant app hands it
-a payment, it shows that exact payment as a QR code you can scan with any UPI
-app on any device. The merchant gets paid exactly as if you'd used a normal
-UPI app: same payee, same amount, same transaction reference.
+<p align="center">
+  <a href="https://github.com/marsian83/upiqr/releases/latest"><img src="https://img.shields.io/github/v/release/marsian83/upiqr?color=3E91FF" alt="Latest release" /></a>
+  <a href="https://github.com/marsian83/upiqr/releases"><img src="https://img.shields.io/github/downloads/marsian83/upiqr/total?color=3E91FF" alt="Downloads" /></a>
+  <img src="https://img.shields.io/badge/Android-10%2B-34A853?logo=android&logoColor=white" alt="Android 10 or newer" />
+  <img src="https://img.shields.io/badge/APK-41_KB-555" alt="APK size 41 KB" />
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/marsian83/upiqr?color=555" alt="MIT license" /></a>
+</p>
 
-## How it works
+<p align="center">
+  <a href="https://github.com/marsian83/upiqr/releases/latest"><strong>Download</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#how-to-use-it">How to use it</a>
+  &nbsp;·&nbsp;
+  <a href="#if-it-doesnt-show-up-at-checkout">Not showing up?</a>
+  &nbsp;·&nbsp;
+  <a href="#limits">Limits</a>
+</p>
 
-Merchant apps start a UPI payment by opening a `upi://pay?pa=…&am=…&tr=…`
-link with whichever UPI app you pick. That link is the same thing a UPI QR
-code contains, so UPI QR just draws it.
+Lots of Indian apps (food delivery, tickets, bill payments) only let you pay with a UPI app installed on the same phone. They never show a QR code. UPI QR turns that payment into one, so you can pay it from any UPI app on any phone.
 
-- **QR screen.** Merchant, payee address, amount and a scannable code, at full
-  brightness. Long-press the code to copy the link. The ⋯ menu has copy,
-  share, save to Photos, and "pay with another app" (forwards the request to
-  a real UPI app and passes its result back).
-- **Auto-confirm (Razorpay only).** If the payment came through Razorpay, the
-  app checks Razorpay's public payment-status endpoint every 3 seconds. Once
-  it shows paid, it returns to the merchant on its own.
-- **Manual confirm.** For other payment gateways, tap **I've paid** *after*
-  the money has gone through. Merchants only check for a short time after you
-  return (Zomato: about 40 seconds), so going back too early means a failed
-  payment.
+<p align="center">
+  <img src="docs/images/waiting.webp" width="260" alt="UPI QR showing a ₹249 payment to Demo Store as a QR code, waiting for payment" />
+  &nbsp;
+  <img src="docs/images/paid.webp" width="260" alt="The same screen after payment: a green check over the QR and 'Payment received'" />
+</p>
 
-## Install
+## The problem
 
-Download `upiqr.apk` from Releases and install it. Android 10 or newer.
+You're ordering food on one phone, but the UPI app you want to pay with is somewhere else: on your other phone, on a family member's phone, or in a service that can only scan QR codes. The checkout won't show you a QR. It just lists the UPI apps on this phone and waits.
 
-## Merchant apps that hide it
+A shop counter would show you a QR for exactly this. The app's payment request carries the same information, it just never draws it.
 
-Many apps don't show every UPI app. They only list installed apps from their
-own allowlist of known package names, so UPI QR won't appear. The build
-script can install a copy under a different package name:
+## How to use it
+
+1. **Install it.** Download `upiqr.apk` from the [latest release](https://github.com/marsian83/upiqr/releases/latest) and open it. Android will ask you to allow installs from your browser or file manager.
+2. **Pick it at checkout.** Choose UPI, then pick **UPI QR** from the list of apps.
+3. **Scan and pay.** Scan the QR with any UPI app, on any phone, and pay as usual. The amount and payee are already filled in.
+4. **Go back to the merchant.**
+   - If the merchant uses Razorpay, UPI QR spots the payment by itself, shows a green check and takes you back.
+   - Otherwise, wait until your UPI app says the payment went through, then tap **I've paid**.
+
+> [!IMPORTANT]
+> Don't tap **I've paid** before the money has actually gone through. After you go back, the merchant only checks for your payment for a short time (for some apps, under a minute). Tap too early and it will mark the payment as failed.
+
+The ⋯ menu can also copy or share the payment link, save the QR to your photos, or hand the payment to another UPI app on the same phone.
+
+## If it doesn't show up at checkout
+
+When you pay with UPI, the merchant app has to decide which apps to show you. Apps do this in one of two ways:
+
+- **They ask Android.** Android keeps track of every app that can handle UPI payments, and the merchant app shows all of them. UPI QR appears here like any other UPI app.
+- **They use their own list.** The app has a built-in list of payment apps it knows about and only shows the ones from that list that you've installed, ignoring everything else. UPI QR isn't on anyone's list, so it never appears.
+
+Every Android app has a unique ID, called its package name, and these lists check that ID and nothing else:
+
+| App | Package name |
+|---|---|
+| <img src="https://img.shields.io/badge/Google_Pay-4285F4?logo=googlepay&logoColor=white" alt="Google Pay" /> | `com.google.android.apps.nbu.paisa.user` |
+| <img src="https://img.shields.io/badge/PhonePe-5F259F?logo=phonepe&logoColor=white" alt="PhonePe" /> | `com.phonepe.app` |
+| <img src="https://img.shields.io/badge/Paytm-00BAF2?logo=paytm&logoColor=white" alt="Paytm" /> | `net.one97.paytm` |
+| <img src="https://img.shields.io/badge/BHIM-00796B?logo=&logoColor=white" alt="BHIM" /> | `in.org.npci.upiapp` |
+
+You can find any app's package name at the end of its Play Store link, after `?id=`.
+
+There's nothing the downloadable APK can do about the second kind. If you build UPI QR yourself, though, you can give your copy the ID of an app from that list that **isn't** installed on your phone:
 
 ```sh
-PKG=<package.name> ./build.sh <adb-serial>
+PKG=the.other.app.id ./build.sh
 ```
 
-If you use this, you're installing an app on your own phone under another
-app's identity. Merchant apps may show that app's name and logo for it. It
-can't be installed next to the real app, and it may break the merchant's
-terms of service. **Don't distribute APKs built this way.** A payment APK
-that pretends to be a real UPI app looks the same as malware, and nobody
-receiving it can check what's inside.
+The merchant will then show your copy under that app's name and logo. Before you do this:
 
-## Build
-
-Needs the Android SDK command-line tools (build-tools and one platform) and a
-JDK. No Gradle.
-
-```sh
-./build.sh                      # → upiqr.apk, signed with a local debug key
-./build.sh <adb-serial>         # build and install
-UPIQR_KEYSTORE=… UPIQR_KEYSTORE_PASS=… ./build.sh   # release signing
-```
+- It only works if the real app isn't installed. You can't have both.
+- You're installing an app on your phone under another app's identity. The merchant may not like that, and it may be against their terms.
+- **Never share an APK built this way.** A payment app that claims to be a real UPI app looks exactly like the scam apps that steal UPI PINs, and the people you send it to can't check what's inside it. It's a build for your phone only.
 
 ## Privacy
 
-- No accounts, analytics or trackers.
-- The only network request is the Razorpay status check, and only for
-  Razorpay payments. It sends the payment ID from the link to
-  `api.razorpay.com`.
-- The most recent payment link is stored in the app's private storage so the
-  launcher screen can show it again.
-- Payment links aren't logged. To debug, run
-  `adb shell setprop log.tag.UPIQR DEBUG`.
+- No accounts, ads, analytics or trackers.
+- It only uses the internet for one thing: for Razorpay payments, it asks `api.razorpay.com` whether that one payment has arrived.
+- It keeps the last payment link on your phone so you can open it again from the app icon. Nothing else is stored.
+- It doesn't write payment links to the system log.
 
-## Limitations
+## Limits
 
-- Android only. On iOS, merchant apps open specific payment apps directly,
-  and there's no way to send a result back.
-- Auto-confirm only covers Razorpay. Other gateways have no public status
-  check.
-- A merchant's payment request can expire while you're paying from another
-  device. If that happens, the merchant will usually refund it automatically.
-- This is a personal side project, not a payments product, and it has no
-  tests. Check the amount and payee before you pay.
+- **Android only.** On iPhones, merchant apps open specific payment apps directly, and there's no way to send a result back.
+- **Auto-confirm only works with Razorpay.** Other payment gateways don't offer a public way to check a payment, so you tap **I've paid** yourself.
+- **Payment requests expire.** If you take too long paying from another phone, the merchant may cancel the request. If you'd already paid, they normally refund you automatically.
+- **It's a side project.** It has no automated tests and no security audit. Check the amount and payee in your UPI app before you pay, like you would with any QR code.
+
+## Build from source
+
+<details>
+<summary><strong>Build it yourself</strong></summary>
+
+You need the Android SDK command-line tools (one platform and the build tools) and a JDK. There's no Gradle.
+
+```sh
+./build.sh                  # builds upiqr.apk, signed with a local debug key
+./build.sh <adb-serial>     # builds it and installs it on a connected phone
+```
+
+Release builds take a keystore from the environment:
+
+```sh
+UPIQR_KEYSTORE=path/to/release.jks UPIQR_KEYSTORE_PASS=… ./build.sh
+```
+
+To see what the app is doing, turn on its logs with `adb shell setprop log.tag.UPIQR DEBUG`, then run `adb logcat -s UPIQR`.
+
+</details>
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Includes Project Nayuki's
-[QR Code generator](https://github.com/nayuki/QR-Code-generator) (MIT), see
-[NOTICE](NOTICE).
+[MIT](LICENSE). The QR encoder is Project Nayuki's [QR Code generator](https://github.com/nayuki/QR-Code-generator), also MIT; see [NOTICE](NOTICE).
