@@ -6,7 +6,7 @@
   <a href="https://github.com/marsian83/upiqr/releases/latest"><img src="https://img.shields.io/github/v/release/marsian83/upiqr?color=3E91FF" alt="Latest release" /></a>
   <a href="https://github.com/marsian83/upiqr/releases"><img src="https://img.shields.io/github/downloads/marsian83/upiqr/total?color=3E91FF" alt="Downloads" /></a>
   <img src="https://img.shields.io/badge/Android-10%2B-34A853?logo=android&logoColor=white" alt="Android 10 or newer" />
-  <img src="https://img.shields.io/badge/APK-41_KB-555" alt="APK size 41 KB" />
+  <img src="https://img.shields.io/badge/APK-44_KB-555" alt="APK size 44 KB" />
   <a href="LICENSE"><img src="https://img.shields.io/github/license/marsian83/upiqr?color=555" alt="MIT license" /></a>
 </p>
 
