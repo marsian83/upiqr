@@ -37,7 +37,8 @@ fi
 OUT=upiqr${PKG:+-$PKG}.apk
 rm -rf build && mkdir -p build/classes build/dex
 
-"$BT/aapt2" link -o build/base.apk -I "$JAR" --manifest AndroidManifest.xml ${PKG:+--rename-manifest-package "$PKG"}
+"$BT/aapt2" compile --dir res -o build/res.zip
+"$BT/aapt2" link -o build/base.apk -I "$JAR" --manifest AndroidManifest.xml build/res.zip ${PKG:+--rename-manifest-package "$PKG"}
 # vendored QR library as-is, then our code with warnings as errors
 javac -nowarn --release 11 -d build/classes $(find src/io -name '*.java')
 javac -Xlint:all -Werror --release 11 -cp "$JAR:build/classes" -d build/classes $(find src/dev -name '*.java')

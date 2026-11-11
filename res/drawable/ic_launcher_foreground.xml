@@ -1,0 +1,20 @@
+<!-- QR finder-pattern motif, white on the accent-blue background. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+
+    <!-- three finder rings (outer square with a punched-out centre) -->
+    <path android:fillColor="#FFFFFF" android:fillType="evenOdd"
+        android:pathData="M26,26 h18 v18 h-18 z  M30,30 h10 v10 h-10 z
+                          M64,26 h18 v18 h-18 z  M68,30 h10 v10 h-10 z
+                          M26,64 h18 v18 h-18 z  M30,68 h10 v10 h-10 z" />
+
+    <!-- finder centres -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M33,33 h4 v4 h-4 z  M71,33 h4 v4 h-4 z  M33,71 h4 v4 h-4 z" />
+
+    <!-- a few data modules so it reads as a code, not a target -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M64,64 h6 v6 h-6 z  M74,64 h4 v4 h-4 z
+                          M66,72 h4 v4 h-4 z  M74,72 h6 v6 h-6 z  M64,80 h4 v2 h-4 z" />
+</vector>
